@@ -1,0 +1,41 @@
+name: NodeJS with VSCE
+
+on:
+  push:
+    branches: [ master ]
+    tags: [ 'v[0-9]+.[0-9]+.[0-9]+' ]
+    paths: [ 'package.json' ]
+  pull_request:
+    branches: [ master ]
+    tags: [ 'v[0-9]+.[0-9]+.[0-9]+' ]
+    paths: [ 'package.json' ]
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x]
+    
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - name: Package
+      run: |
+        npm install
+        npm run package
+  release:
+    needs: package
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Release Drafter
+      uses: release-drafter/release-drafter@v5.15.0
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
