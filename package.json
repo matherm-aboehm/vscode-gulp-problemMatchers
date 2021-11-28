@@ -1,18 +1,21 @@
 {
-	"name": "gulpproblemmatchers",
+	"name": "gulp-problem-matchers",
 	"displayName": "GULP Problem Matchers",
 	"description": "Defines common named problem matchers for gulp tasks",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"icon": "images/gulp.png",
 	"license": "MIT",
 	"engines": {
 		"vscode": "^1.52.0"
 	},
 	"categories": [
-		"Other"
+		"Programming Languages"
 	],
-	"main": "./out/extension.js",
-	"activationEvents": [],
+	"keywords": [
+		"gulp",
+		"problem matchers",
+		"tasks"
+	],
 	"contributes": {
 		"problemPatterns": [
 			{
@@ -63,7 +66,6 @@
 		]
 	},
 	"scripts": {
-		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -p ./",
 		"watch": "tsc -watch -p ./",
 		"pretest": "npm run compile && npm run lint",
