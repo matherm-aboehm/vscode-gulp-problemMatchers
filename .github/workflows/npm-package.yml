@@ -3,15 +3,27 @@ name: NodeJS with VSCE
 on:
   push:
     branches: [ master ]
-    tags: [ 'v[0-9]+.[0-9]+.[0-9]+' ]
-    paths: [ 'package.json' ]
   pull_request:
     branches: [ master ]
-    tags: [ 'v[0-9]+.[0-9]+.[0-9]+' ]
-    paths: [ 'package.json' ]
 
 jobs:
+  detect-and-tag-new-version:
+    runs-on: ubuntu-latest
+    outputs:
+      previous-version: ${{ steps.detect-version.outputs.previous-version }}
+      current-version: ${{ steps.detect-version.outputs.current-version }}
+      tag: ${{ steps.detect-version.outputs.tag }}
+      
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 2
+    - id: detect-version
+      uses: salsify/action-detect-and-tag-new-version@v2
+
   package:
+    needs: detect-and-tag-new-version
+    if: needs.detect-and-tag-new-version.outputs.current-version != needs.detect-and-tag-new-version.outputs.previous-version
     runs-on: ubuntu-latest
 
     strategy:
@@ -20,7 +32,7 @@ jobs:
     
     steps:
     - uses: actions/checkout@v2
-
+    
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
@@ -30,12 +42,39 @@ jobs:
       run: |
         npm install
         npm run package
+    - name: Upload Package
+      uses: actions/upload-artifact@v2.2.4
+      with:
+        name: package
+        path: gulp-problem-matchers-*.vsix
+        if-no-files-found: error
+        
   release:
-    needs: package
+    needs: [detect-and-tag-new-version, package]
     runs-on: ubuntu-latest
     
     steps:
+    - name: Download Package
+      uses: actions/download-artifact@v2
+      with:
+        name: package
+        
     - name: Release Drafter
+      id: release-drafter
       uses: release-drafter/release-drafter@v5.15.0
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag: ${{ needs.detect-and-tag-new-version.outputs.tag }}
+        version: ${{ needs.detect-and-tag-new-version.outputs.current-version }}
+        
+    - name: Upload Release Asset
+      id: upload-release-asset 
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.release-drafter.outputs.upload_url }}
+        asset_path: ./gulp-problem-matchers-${{ needs.detect-and-tag-new-version.outputs.current-version }}.vsix
+        asset_name: gulp-problem-matchers-${{ needs.detect-and-tag-new-version.outputs.current-version }}.vsix
+        asset_content_type: application/vsix
